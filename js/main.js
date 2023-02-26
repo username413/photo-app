@@ -203,8 +203,14 @@ const fillSuggestedAccs = (suggestedUsers) => {
 }
 
 const initPage = async () => {
-    token = await getAccessToken(rootURL, 'webdev', 'password');
-
+    const readAuth = await fetch("./auth.json");
+    if (readAuth.status === 404) {
+        token = await getAccessToken(rootURL, 'webdev', 'password');
+    } else {
+        const userPass = await readAuth.json();
+        token = await getAccessToken(rootURL, userPass.user, userPass.pass);
+    }
+    
     showStories();
     loggedInUser();
     suggestedAccs();
