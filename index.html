@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
+    <script src="js/main.js" type="module" defer></script>
+    <title>Photo App</title>
+</head>
+
+<body>
+    <nav>
+        <button>
+            <h1>Photo App</h1>
+        </button>
+        <ul>
+            <li><button id="logged-in-username">username</button></li>
+            <li><button id="sign-out">Sign Out</button></li>
+        </ul>
+    </nav>
+
+    <aside>
+        <header>
+            <img src="" alt="aside user profile picture" id="logged-in-pfp" />
+            <button id="logged-in-username">username</button>
+        </header>
+        <section class="suggestions">
+            <p class="suggestion-text">Suggestions for you</p>
+            <!-- suggested accounts -->
+        </section>
+    </aside>
+
+    <main>
+        <section class="feed">
+            <header class="stories">
+                <!-- stories -->
+            </header>
+
+            <header class="posts">
+                <!-- posts -->
+            </header>
+
+            <div class="modal-bg hidden" aria-hidden="true" role="dialog">
+                <button class="close" aria-label="Close the modal window" onclick="closeModal(event);">
+                    <i class="fa-sharp fa-solid fa-xmark"></i>
+                </button>
+                <section class="modal">
+                    <div class="modal-body">
+                        <div class="image"></div>
+                        <section class="the-comments">
+                            <!-- post creator detail -->
+                            <!-- post specific comments -->
+                        </section>
+                    </div>
+                </section>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>
