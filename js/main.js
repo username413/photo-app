@@ -48,7 +48,7 @@ const fillStories = (storiesData) => {
 };
 
 const showPosts = async () => {
-    const endpoint = `${rootURL}/api/posts/`; // change limit
+    const endpoint = `${rootURL}/api/posts/`;
     const res = await fetch(endpoint, {
         headers: {
             "Content-Type": "application/json",
@@ -72,11 +72,15 @@ const fillPosts = (posts) => {
         viewAllComments = `<section id="view-all-comments" onclick="openModal(${posts.id})"> <button class="open">View all ${noOfComments} comments</button></section>`;
     }
 
-    const likeToShow = posts.current_user_like_id ? '<i class="fa-solid fa-heart" style="color: red"></i>' : '<i class="fa-regular fa-heart"></i>';
-    const bookmarkToShow = posts.current_user_bookmark_id ? '<i class="fa-solid fa-bookmark"></i>' : '<i class="fa-regular fa-bookmark"></i>';
+    const likeToShow = posts.current_user_like_id 
+        ? `<button type="button" onclick="unlikePost(${posts.id}, ${posts.current_user_like_id})" title="Unlike this post."> <i class="fa-solid fa-heart" style="color: red"></i> </button>` 
+        : `<button type="button" onclick="likePost(${posts.id})" title="Like this post."> <i class="fa-regular fa-heart"></i> </button>`;
+    const bookmarkToShow = posts.current_user_bookmark_id 
+        ? `<button type="button" onclick="unbookmarkPost(${posts.current_user_bookmark_id}, ${posts.id})" title="Unbookmark this post."> <i class="fa-solid fa-bookmark"></i> </button>` 
+        : `<button type="button" onclick="bookmarkPost(${posts.id})" title="Bookmark this post."> <i class="fa-regular fa-bookmark"></i> </button>`;
 
     const htmlChunk = `
-        <section>
+        <section id="post_${posts.id}">
             <section id="username-three-icon">
                 ${posts.user.username}
                 <i class="fa-solid fa-ellipsis"></i>
@@ -87,9 +91,7 @@ const fillPosts = (posts) => {
             <section id="post-stats">
                 <section id="icons">
                     <span id="icons-left">
-                        <button type="button" title="Like this post.">
-                            ${likeToShow}
-                        </button>
+                        ${likeToShow}
                         <button type="button" title="Comment on this post.">
                             <i class="fa-regular fa-comment"></i>
                         </button>
@@ -98,9 +100,7 @@ const fillPosts = (posts) => {
                         </button>
                     </span>
                     <span id="icons-right">
-                        <button type="button" title="Bookmark this post.">
-                            ${bookmarkToShow}
-                        </button>
+                        ${bookmarkToShow}
                     </span>
                 </section>
                 <section id="like-counter">
@@ -160,6 +160,77 @@ const fillModal = async (specificPost) => {
     };
 };
 
+window.likePost = async (postID) => {
+    const endpoint = `${rootURL}/api/posts/likes/`;
+    const postData = {
+        "post_id": postID
+    };
+
+    await fetch(endpoint, {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(postData)
+    });
+    redraw(postID);
+}
+
+window.unlikePost = async (postID, likeID) => {
+    const endpoint = `${rootURL}/api/posts/likes/${likeID}`;
+    await fetch(endpoint, {
+        method: "DELETE",
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        },
+    });
+    redraw(postID);
+}
+
+window.unbookmarkPost = async (bookmarkID, postID) => {
+    const endpoint = `${rootURL}/api/bookmarks/${bookmarkID}`;
+    await fetch(endpoint, {
+        method: "DELETE",
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        }
+    });
+    redraw(postID);
+}
+
+window.bookmarkPost = async (postID) => {
+    const endpoint = `${rootURL}/api/bookmarks/`;
+    const postData = {
+        "post_id": postID
+    };
+
+    await fetch(endpoint, {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(postData)
+    });
+    redraw(postID);
+}
+
+const redraw = async (postID) => {
+    const endpoint = `${rootURL}/api/posts/${postID}`;
+    const response = await fetch(endpoint, {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        }
+    })
+    const data = await response.json();
+    const htmlString = fillPosts(data);
+    targetElementAndReplace(`#post_${postID}`, htmlString);
+}
+
 const loggedInUser = async () => {
     const getURL = `${rootURL}/api/profile`;
     const res = await fetch(getURL, {
@@ -202,6 +273,14 @@ const fillSuggestedAccs = (suggestedUsers) => {
     `;
 }
 
+const targetElementAndReplace = (selector, newHTML) => {
+    const div = document.createElement('div');
+    div.innerHTML = newHTML;
+    const newEl = div.firstElementChild;
+    const oldEl = document.querySelector(selector);
+    oldEl.parentElement.replaceChild(newEl, oldEl);
+}
+
 const initPage = async () => {
     const readAuth = await fetch("./auth.json");
     if (readAuth.status === 404) {
@@ -210,7 +289,7 @@ const initPage = async () => {
         const userPass = await readAuth.json();
         token = await getAccessToken(rootURL, userPass.user, userPass.pass);
     }
-    
+
     showStories();
     loggedInUser();
     suggestedAccs();
