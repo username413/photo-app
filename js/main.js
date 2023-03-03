@@ -73,11 +73,11 @@ const fillPosts = (posts) => {
     }
 
     const likeToShow = posts.current_user_like_id
-        ? `<button type="button" onclick="unlikePost(${posts.id}, ${posts.current_user_like_id})" title="Unlike this post."> <i class="fa-solid fa-heart" style="color: red"></i> </button>`
-        : `<button type="button" onclick="likePost(${posts.id})" title="Like this post."> <i class="fa-regular fa-heart"></i> </button>`;
+        ? `<button type="button" aria-label="Post is liked." onclick="unlikePost(${posts.id}, ${posts.current_user_like_id})" title="Unlike this post."> <i class="fa-solid fa-heart" style="color: red"></i> </button>`
+        : `<button type="button" aria-label="Post is not liked." onclick="likePost(${posts.id})" title="Like this post."> <i class="fa-regular fa-heart"></i> </button>`;
     const bookmarkToShow = posts.current_user_bookmark_id
-        ? `<button type="button" onclick="unbookmarkPost(${posts.current_user_bookmark_id}, ${posts.id})" title="Unbookmark this post."> <i class="fa-solid fa-bookmark"></i> </button>`
-        : `<button type="button" onclick="bookmarkPost(${posts.id})" title="Bookmark this post."> <i class="fa-regular fa-bookmark"></i> </button>`;
+        ? `<button type="button" aria-label="Post is bookmarked." onclick="unbookmarkPost(${posts.current_user_bookmark_id}, ${posts.id})" title="Unbookmark this post."> <i class="fa-solid fa-bookmark"></i> </button>`
+        : `<button type="button" aria-label="Post is not bookmarked." onclick="bookmarkPost(${posts.id})" title="Bookmark this post."> <i class="fa-regular fa-bookmark"></i> </button>`;
 
     const htmlChunk = `
         <section id="post_${posts.id}">
@@ -118,16 +118,36 @@ const fillPosts = (posts) => {
             <section id="add-comment">
                 <div id="comment-input">
                     <form action="emote"><i class="fa-regular fa-face-smile"></i></form>
-                    <input type="text" name="add-comment" id="add-comment" placeholder="Add a comment..">
+                    <input type="text" id="comment-in-${posts.id}" placeholder="Add a comment..">
                 </div>
                 <div id="post-comment-button">
-                    <button>Post</button>
+                    <button onclick="userComment(${posts.id})">Post</button>
                 </div>
             </section>
         </section>`;
 
     return htmlChunk;
 };
+
+window.userComment = async (postID) => {
+    let userIn = document.querySelector(`#comment-in-${postID}`);
+    const endpoint = `${rootURL}/api/comments`;
+    const postData = {
+        "post_id": postID,
+        "text": userIn.value
+    };
+
+    await fetch(endpoint, {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(postData)
+    });
+    redraw(postID);
+    userIn.focus();
+}
 
 const fillModal = async (specificPost) => {
     const endpoint = `${rootURL}/api/posts/${specificPost}`;
@@ -275,15 +295,15 @@ const fillSuggestedAccs = (suggestedUsers) => {
 
 window.updateFollowing = async (userID) => {
     const buttonValue = document.querySelector(`#btn_${userID}`).innerHTML;
-    console.log(buttonValue, userID);
+    let oldUserData = "";
 
     if (buttonValue === "follow") {
-        const endpoint = `${rootURL}/api/following/`;
+        const followEndpoint = `${rootURL}/api/following/`;
         const user = {
             "user_id": userID
         };
 
-        const res = await fetch(endpoint, {
+        const res = await fetch(followEndpoint, {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json',
@@ -294,19 +314,38 @@ window.updateFollowing = async (userID) => {
         const data = await res.json();
 
         document.querySelector(`#btn_${userID}`).innerHTML = "unfollow";
-        
+
         const htmlString = fillSuggestedAccs(data);
         targetElementAndReplace(`#suggestion_${userID}`, htmlString);
     } else {
-        const endpoint = `${rootURL}/api/following/${userID}`;
-        await fetch(endpoint, {
+        const allFollowing = `${rootURL}/api/following`;
+        const res = await fetch(allFollowing, {
+            method: "GET",
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            }
+        });
+        const data = await res.json();
+        for (let d of data) {
+            if (d.id === userID) {
+                oldUserData = d.following;
+            }
+        }
+
+        const unfollowEndpoint = `${rootURL}/api/following/${userID}`;
+        await fetch(unfollowEndpoint, {
             method: "DELETE",
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + token
             },
         });
+
         document.querySelector(`#btn_${userID}`).innerHTML = "follow";
+
+        const htmlString = fillSuggestedAccs(oldUserData);
+        targetElementAndReplace(`#suggestion_${userID}`, htmlString);
     }
 };
 
