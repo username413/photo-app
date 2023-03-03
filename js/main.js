@@ -12,7 +12,7 @@ window.openModal = (postID) => {
     fillModal(postID);
 }
 
-window.closeModal = (ev) => {
+window.closeModal = () => {
     modalElement.classList.add('hidden');
     modalElement.setAttribute('aria-hidden', 'false');
     document.querySelector('.open').focus();
@@ -72,11 +72,11 @@ const fillPosts = (posts) => {
         viewAllComments = `<section id="view-all-comments" onclick="openModal(${posts.id})"> <button class="open">View all ${noOfComments} comments</button></section>`;
     }
 
-    const likeToShow = posts.current_user_like_id 
-        ? `<button type="button" onclick="unlikePost(${posts.id}, ${posts.current_user_like_id})" title="Unlike this post."> <i class="fa-solid fa-heart" style="color: red"></i> </button>` 
+    const likeToShow = posts.current_user_like_id
+        ? `<button type="button" onclick="unlikePost(${posts.id}, ${posts.current_user_like_id})" title="Unlike this post."> <i class="fa-solid fa-heart" style="color: red"></i> </button>`
         : `<button type="button" onclick="likePost(${posts.id})" title="Like this post."> <i class="fa-regular fa-heart"></i> </button>`;
-    const bookmarkToShow = posts.current_user_bookmark_id 
-        ? `<button type="button" onclick="unbookmarkPost(${posts.current_user_bookmark_id}, ${posts.id})" title="Unbookmark this post."> <i class="fa-solid fa-bookmark"></i> </button>` 
+    const bookmarkToShow = posts.current_user_bookmark_id
+        ? `<button type="button" onclick="unbookmarkPost(${posts.current_user_bookmark_id}, ${posts.id})" title="Unbookmark this post."> <i class="fa-solid fa-bookmark"></i> </button>`
         : `<button type="button" onclick="bookmarkPost(${posts.id})" title="Bookmark this post."> <i class="fa-regular fa-bookmark"></i> </button>`;
 
     const htmlChunk = `
@@ -262,16 +262,53 @@ const suggestedAccs = async () => {
 
 const fillSuggestedAccs = (suggestedUsers) => {
     return `
-        <section>
-            <img src="${suggestedUsers.image_url}" alt="aside user profile picture" />
+        <section id="suggestion_${suggestedUsers.id}">
+            <img src="${suggestedUsers.following ? suggestedUsers.following.image_url : suggestedUsers.image_url}" alt="aside user profile picture" />
             <div>
-                <p class="username">${suggestedUsers.username}</p>
+                <p class="username">${suggestedUsers.following ? suggestedUsers.following.username : suggestedUsers.username}</p>
                 <p id="suggested-for-you">suggested for you</p>
             </div>
-            <button class="button">follow</button>
+            <button class="button" id="btn_${suggestedUsers.id}" onclick="updateFollowing(${suggestedUsers.id})">${suggestedUsers.following ? 'unfollow' : 'follow'}</button>
         </section>
     `;
 }
+
+window.updateFollowing = async (userID) => {
+    const buttonValue = document.querySelector(`#btn_${userID}`).innerHTML;
+    console.log(buttonValue, userID);
+
+    if (buttonValue === "follow") {
+        const endpoint = `${rootURL}/api/following/`;
+        const user = {
+            "user_id": userID
+        };
+
+        const res = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(user)
+        });
+        const data = await res.json();
+
+        document.querySelector(`#btn_${userID}`).innerHTML = "unfollow";
+        
+        const htmlString = fillSuggestedAccs(data);
+        targetElementAndReplace(`#suggestion_${userID}`, htmlString);
+    } else {
+        const endpoint = `${rootURL}/api/following/${userID}`;
+        await fetch(endpoint, {
+            method: "DELETE",
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+        });
+        document.querySelector(`#btn_${userID}`).innerHTML = "follow";
+    }
+};
 
 const targetElementAndReplace = (selector, newHTML) => {
     const div = document.createElement('div');
